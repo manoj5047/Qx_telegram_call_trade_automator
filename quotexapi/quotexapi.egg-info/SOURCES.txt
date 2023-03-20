@@ -1,0 +1,9 @@
+setup.py
+quotexapi.egg-info/PKG-INFO
+quotexapi.egg-info/SOURCES.txt
+quotexapi.egg-info/dependency_links.txt
+quotexapi.egg-info/entry_points.txt
+quotexapi.egg-info/requires.txt
+quotexapi.egg-info/top_level.txt
+ws/__init__.py
+ws/client.py
