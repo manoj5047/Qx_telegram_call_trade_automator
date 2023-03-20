@@ -57,12 +57,12 @@ add_input_element = None
 remove_input_element = None
 
 
-def get_future_time():
+def get_future_time(minutes):
     # get the current time
     now = datetime.datetime.now()
 
     # add 5 minutes to the current time
-    future_time = now + datetime.timedelta(minutes=5)
+    future_time = now + datetime.timedelta(minutes=minutes)
 
     # format the future time in HH:MM format
     future_time_str = future_time.strftime('%H:%M')
@@ -135,30 +135,26 @@ def place_short_order(is_to_place_order):
 def amount_text():
     if amount_text_field is not None:
         print("AMOUNT AVAILABLE")
-        setupAmount()
+        setup_amount()
+        setup_time()
         place_long_order(True)
-        # setupTime()
+        place_short_order(True)
 
     else:
         print("AMOUNT NOT AVAILABLE")
 
 
-def setupTime():
-    print(get_future_time())
+def setup_time(minutes):
+    print(get_future_time(minutes))
     time_set_button.click()
-
-    time_dialog_button = driver.find_element(By.XPATH,
-                                             "//div[contains(@class, 'mobile-time-input__options-tabs')]")
-    # time_dialog_button.click()
-
-    xpath = f"//div[contains(@class, 'mobile-time-input__options-item') and text()='{get_future_time()}']"
+    xpath = f"//div[contains(@class, 'input-control__dropdown-option') and text()='{get_future_time(minutes)}']"
     print(xpath)
-    future_time_button = driver.find_element(By.XPATH,
-                                             f"//div[contains(@class, 'mobile-time-input__options-item') and text()='{get_future_time()}']")
-    # future_time_button.click()
+    future_time_button = driver.find_element(By.XPATH, xpath)
+    future_time_button.click()
 
 
-def setupAmount():
+
+def setup_amount():
     value = amount_text_field.get_attribute("value")
     final_value = int(value.replace('$', ''))
     for i in range(final_value, 0, -1):
