@@ -1,5 +1,7 @@
 import datetime
 import json
+import threading
+import time
 
 import undetected_chromedriver as uc
 from selenium.common import TimeoutException
@@ -38,6 +40,24 @@ capabilities['perfLoggingPrefs'] = {'enableNetwork': True, 'enablePage': False}
 driver = uc.Chrome(options=options, capabilities=capabilities)
 action_chains = ActionChains(driver)
 
+
+def printCurrentUrl():
+    while True:
+        print(driver.current_url)
+        time.sleep(5)
+
+
+def start_thread():
+    # start a new thread to run the print_url() function
+    t = threading.Thread(target=printCurrentUrl)
+    t.daemon = True
+    t.start()
+
+
+start_thread()
+
+
+#
 
 def start_driver():
     driver.delete_all_cookies()
