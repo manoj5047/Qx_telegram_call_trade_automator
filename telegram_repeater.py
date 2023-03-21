@@ -1,15 +1,20 @@
-import datetime
 import re
 
 from telethon import TelegramClient, events
 from telethon.tl.types import PeerChannel
 
 from quotexapi.stable_api import Quotex
+from qx_broker_automation_script import *
 
 telegram_api_id = 27224311
 telegram_api_hash = '9c11a1bcad7528b43b07fbf454a83549'
+qx_bot_update = 'https://t.me/qx_bot_updates'
+test_channel = 'https://t.me/manoj_5047'
+session_name = 'ALL-CHATS'
+qx_signal_channel_name = 'Trading BTC Signals'
+my_channel_name = 'Test'
 
-client = TelegramClient('ALL-CHATS', telegram_api_id, telegram_api_hash)
+client = TelegramClient(session_name, telegram_api_id, telegram_api_hash)
 
 
 # @client.on(events.NewMessage(chats='wolfxsignals'))
@@ -33,24 +38,42 @@ def get_future_time():
     return future_time_str
 
 
+async def place_order(time, direction, amount):
+    print("Placing order from Telegram")
+    if direction == 'UP':
+        place_long_order(True, time, amount)
+
+    elif direction == 'DOWN':
+        place_short_order(True, time, amount)
+
+    await sendMessageToGroup(f"Placed Order on {direction} with {amount}$ for {time} Minutes", qx_bot_update)
+
+
+def stop_trading():
+    closeBrowser()
+
+
 @client.on(events.NewMessage())
 async def handle_new_message(event):
     if event.message:
 
-        if event.chat.title == 'Trading BTC Signals' or event.chat.title == 'Test':
+        if event.chat.title == qx_signal_channel_name or event.chat.title == my_channel_name:
             print(f'{get_future_time()} :: Group title ==> {event.chat.title}')
             # print('Message ==> ' + f'{event.message.message}')
             text = event.message.message
-            pattern = re.compile(r'“(UP|DOWN)”')
+            pattern = re.compile(r'put “(UP|DOWN)”')
             match = pattern.search(text)
             if match:
                 value = match.group(1)
                 print(f'{get_future_time()} : The value is {value}.')
+                await place_order(time=5, direction=value, amount=1)
             else:
                 info = re.search(r'\b(WIN|DEAL)\b', text)
                 if info is not None:
                     value = info.group(0)
                     print(f'{get_future_time()} : The trade status is {value}.')
+                    await sendMessageToGroup(f"Order status {value}", qx_bot_update)
+
                 else:
                     print(f'{get_future_time()} :: Unsupported Message ==> {event.message.message}')
         else:
@@ -58,12 +81,12 @@ async def handle_new_message(event):
             print("Different MESSAGE from different group" + f'${event.chat.title}' + f'${event.message}')
 
     if event.message.message is not None:
-        await sendMessageToGroup(event.message.message)
+        await sendMessageToGroup(event.message.message, None)
 
 
-async def sendMessageToGroup(messages):
+async def sendMessageToGroup(messages, groupId):
     # Find your group by its username or ID
-    group_entity = await client.get_entity("https://t.me/manoj_5047")
+    group_entity = await client.get_entity(test_channel if groupId is None else groupId)
     # Send your message
     try:
         await client.send_message(PeerChannel(group_entity.id.real), messages)
@@ -71,8 +94,10 @@ async def sendMessageToGroup(messages):
         print('Empty Message.')
 
 
-async def main():
+async def startClient():
     # await connectQXApi()
+    start_driver()
+    login_flow_script()
     await client.start()
     await client.run_until_disconnected()
 
@@ -86,4 +111,4 @@ async def connectQXApi():
 
 if __name__ == '__main__':
     with client:
-        client.loop.run_until_complete(main())
+        client.loop.run_until_complete(startClient())
