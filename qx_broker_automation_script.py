@@ -1,5 +1,4 @@
 import datetime
-import logging
 import threading
 import time
 
@@ -12,6 +11,8 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+
+from telegram_repeater import logger
 
 token = "ULTME6U2JF3B7YVV"
 account_smj = "smj310711995@gmail.com"
@@ -50,8 +51,8 @@ action_chains = ActionChains(driver)
 
 def printCurrentUrl():
     while True:
-        logging.debug(driver.current_url)
-        time.sleep(60)
+        logger.debug(driver.current_url)
+        time.sleep(300)
 
 
 def start_thread():
@@ -74,21 +75,21 @@ def start_driver():
 
 def login_flow_script():
     if do_login():
-        logging.debug("Logged in successfully. Current URL: " + driver.current_url)
+        logger.debug("Logged in successfully. Current URL: " + driver.current_url)
 
         switch_to_demo_trade()
-        logging.debug("Switched to demo trade")
+        logger.debug("Switched to demo trade")
 
         find_dash_board_buttons()
-        logging.debug("Found Buttons")
+        logger.debug("Found Buttons")
 
         setup_input_buttons()
-        logging.debug("Found Input Buttons")
+        logger.debug("Found Input Buttons")
         return True
         # place_long_order(is_to_place_order=False, miutes=0, amount=1)
         # place_short_order(is_to_place_order=False, miutes=0, amount=1)
     else:
-        logging.error("Login Failed")
+        logger.error("Login Failed")
         return False
 
 
@@ -103,7 +104,7 @@ def do_login():
 
     try:
         auth_screen = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "auth")))
-        logging.info("AUTH SCREEN PRESENT")
+        logger.info("AUTH SCREEN PRESENT")
         otp_input = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.CLASS_NAME, "input-control-cabinet__input")))
         perform_click_action_chain(otp_input)
@@ -136,7 +137,7 @@ def get_future_time(minutes):
     # get the current time
     now = datetime.datetime.now()
 
-    # logging.debug(f'current time {now.strftime("%H:%M:%S")}')
+    # logger.debug(f'current time {now.strftime("%H:%M:%S")}')
 
     # format the future time in HH:MM format
     future_time_str = (now + datetime.timedelta(minutes=minutes)).strftime('%H:%M')
@@ -152,28 +153,28 @@ def find_dash_board_buttons():
             EC.element_to_be_clickable((By.CSS_SELECTOR, ".section-deal__danger")))
 
     except TimeoutException:
-        logging.error("Timed out waiting for DOWN to be visible")
+        logger.error("Timed out waiting for DOWN to be visible")
     try:
         up_button = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.CSS_SELECTOR, ".section-deal__success")))
     except TimeoutException:
-        logging.error("Timed out waiting for UP to be visible")
+        logger.error("Timed out waiting for UP to be visible")
     try:
         amount_text_field = WebDriverWait(driver, 10).until(
             EC.visibility_of_element_located((By.CSS_SELECTOR, 'div.section-deal__investment '
                                                                'input.input-control__input[type="text"]')))
         value = amount_text_field.get_attribute("value")
-        logging.debug(f"AMOUNT TEXT FIELD VALUE : {value}")
+        logger.debug(f"AMOUNT TEXT FIELD VALUE : {value}")
     except TimeoutException:
         # handle timeout exception here
-        logging.error("Timed out waiting for amount_text_field to be visible")
+        logger.error("Timed out waiting for amount_text_field to be visible")
     try:
         time_set_button = WebDriverWait(driver, 10).until(
             EC.visibility_of_element_located(
                 (By.XPATH, "//span[contains(@class, 'input-control__label') and text()='Time']")))
     except TimeoutException:
         # handle timeout exception here
-        logging.error("Timed out waiting for time_set_button to be visible")
+        logger.error("Timed out waiting for time_set_button to be visible")
     try:
         remove_input_element = driver.find_element(By.XPATH,
                                                    "//button[contains(@class, 'input-control__button') and text()='-']")
@@ -181,7 +182,7 @@ def find_dash_board_buttons():
         add_input_element = driver.find_element(By.XPATH,
                                                 "//button[contains(@class, 'input-control__button') and text()='+']")
     except Exception:
-        logging.error("ERROR on + and - Buttons findings")
+        logger.error("ERROR on + and - Buttons findings")
 
 
 def get_future_time_in_seconds():
@@ -196,11 +197,11 @@ def place_long_order(is_to_place_order, miutes, amount):
             # setup_amount(amount)
             setup_time(minutes=miutes)
             perform_click_action_chain(up_button)
-            logging.debug(f'{get_future_time_in_seconds()} :: Order placed time')
+            logger.debug(f'{get_future_time_in_seconds()} :: Order placed time')
         else:
-            logging.debug("UP AVAILABLE")
+            logger.debug("UP AVAILABLE")
     else:
-        logging.error("Up element not found yet")
+        logger.error("Up element not found yet")
 
 
 # Click on the Down button
@@ -212,9 +213,9 @@ def place_short_order(is_to_place_order, miutes, amount):
             setup_time(minutes=miutes)
             perform_click_action_chain(down_button)
         else:
-            logging.debug("DOWN AVAILABLE")
+            logger.debug("DOWN AVAILABLE")
     else:
-        logging.error("Down element not found yet")
+        logger.error("Down element not found yet")
 
 
 def setup_currency():
@@ -224,12 +225,12 @@ def setup_currency():
 
 def setup_input_buttons():
     if amount_text_field is not None:
-        logging.debug("AMOUNT BTN AVAILABLE")
+        logger.debug("AMOUNT BTN AVAILABLE")
         setup_time(default_time)
         setup_amount(default_amount)
         # setup_currency()
     else:
-        logging.error("AMOUNT BTN NOT AVAILABLE")
+        logger.error("AMOUNT BTN NOT AVAILABLE")
 
 
 def setup_time(minutes):
@@ -237,7 +238,7 @@ def setup_time(minutes):
     perform_click_action_chain(time_set_button)
     perform_click_action_chain(
         driver.find_element(By.XPATH, f"//div[contains(@class, 'input-control__dropdown-option') and text()='{time}']"))
-    # logging.debug(time)
+    # logger.debug(time)
 
 
 def perform_click_action_chain(widget):
@@ -253,22 +254,22 @@ def setup_amount(amount):
     amount_text_field.clear()
     # DO NOT DELETE
     # value = amount_text_field.get_attribute("value")
-    # logging.debug(f'before value {value}')
+    # logger.debug(f'before value {value}')
     #
     # if amount <= 1:
     #     amount_text_field.clear()
     # elif amount > 1:
     #     amount_text_field.send_keys(amount)
     # value = amount_text_field.get_attribute("value")
-    # logging.debug(f'after value {value}')
+    # logger.debug(f'after value {value}')
 
     # final_value = int(value.replace('$', ''))
     # for i in range(final_value, 0, -1):
     #     remove_input_element.click()
-    #     logging.debug(amount_text_field.get_attribute("value").replace("$", ""))
+    #     logger.debug(amount_text_field.get_attribute("value").replace("$", ""))
 
 
 def close_browser():
     # Close the browser
-    logging.debug("BROWSER CLOSED")
+    logger.debug("BROWSER CLOSED")
     driver.quit()
