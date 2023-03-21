@@ -72,25 +72,28 @@ def open_gmail():
 
 
 def login_flow_script():
-    do_login()
-    print("Logged in successfully. Current URL: " + driver.current_url)
+    if do_login():
+        print("Logged in successfully. Current URL: " + driver.current_url)
 
-    switch_to_demo_trade()
-    print("Switched to demo trade")
+        switch_to_demo_trade()
+        print("Switched to demo trade")
 
-    find_dash_board_buttons()
-    print("Found Buttons")
+        find_dash_board_buttons()
+        print("Found Buttons")
 
-    setup_input_buttons()
-    print("Found Input Buttons")
-
-    # place_long_order(is_to_place_order=False, miutes=0, amount=1)
-    # place_short_order(is_to_place_order=False, miutes=0, amount=1)
+        setup_input_buttons()
+        print("Found Input Buttons")
+        return True
+        # place_long_order(is_to_place_order=False, miutes=0, amount=1)
+        # place_short_order(is_to_place_order=False, miutes=0, amount=1)
+    else:
+        print("Login Failed")
+        return False
 
 
 def do_login():
     # Enter email and password
-    email = "smj31071995@gmail.com"
+    email = "sayimanojsugavasi@gmail.com"
     password = "Pas$w06D@Qx"
     driver.find_element(By.NAME, "email").send_keys(email)
     driver.find_element(By.NAME, "password").send_keys(password)
@@ -98,8 +101,19 @@ def do_login():
     # Click Sign In button
     perform_click_action_chain(driver.find_element(By.CLASS_NAME, "modal-sign__block-button"))
 
-    # Wait for the dashboard to load
-    WebDriverWait(driver, 60).until(expected_conditions.url_contains('trade'))
+    try:
+        auth_screen = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "auth")))
+        print("AUTH SCREEN PRESENT")
+        pass
+    except:
+        pass
+
+    try:
+        # Wait for the dashboard to load
+        WebDriverWait(driver, 30).until(expected_conditions.url_contains('trade'))
+        return True
+    except:
+        return False
 
 
 def switch_to_demo_trade():

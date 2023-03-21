@@ -1,4 +1,5 @@
 import re
+import sys
 
 from telethon import TelegramClient, events
 from telethon.tl.types import PeerChannel
@@ -95,9 +96,12 @@ async def sendMessageToGroup(messages, groupId):
 async def startClient():
     # await connectQXApi()
     start_driver()
-    login_flow_script()
-    await client.start()
-    await client.run_until_disconnected()
+    if login_flow_script():
+        await client.start()
+        await client.run_until_disconnected()
+    else:
+        print("Login Failed")
+        sys.exit()
 
 
 async def connectQXApi():
