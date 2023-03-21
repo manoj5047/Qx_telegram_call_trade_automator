@@ -4,7 +4,6 @@ import sys
 from telethon import TelegramClient, events
 from telethon.tl.types import PeerChannel
 
-from quotexapi.stable_api import Quotex
 from qx_broker_automation_script import *
 
 telegram_api_id = 27224311
@@ -20,7 +19,7 @@ client = TelegramClient(session_name, telegram_api_id, telegram_api_hash)
 
 # @client.on(events.NewMessage(chats='wolfxsignals'))
 # async def my_event_handler(event):
-#     print(event.message)
+#     logging.debug(event.message)
 
 
 #     # Replace this with your own code to handle the incoming messages
@@ -35,82 +34,74 @@ async def get_future_time_in_seconds_await():
     return now.strftime('%H:%M:%S.{}').format(now.microsecond // 1000)
 
 
-async def place_order(time, direction, amount):
+async def place_order(order_time, direction, amount):
     if direction == 'UP':
-        place_long_order(True, time, amount)
+        place_long_order(True, order_time, amount)
 
     elif direction == 'DOWN':
-        place_short_order(True, time, amount)
+        place_short_order(True, order_time, amount)
 
     try:
         time_in_seconds = get_future_time_in_seconds()
-        await sendMessageToGroup(f"Placed Order on {direction} with {amount}$ for {time} at {time_in_seconds} ",
-                                 qx_bot_update)
+        await send_message_to_group(f"Placed Order on {direction} with {amount}$ for {order_time} at {time_in_seconds} "
+                                    , qx_bot_update)
     except:
-        print('Error in telegram sending.')
+        logging.error('Error in telegram sending.')
 
 
 def stop_trading():
-    closeBrowser()
+    close_browser()
 
 
 @client.on(events.NewMessage())
 async def handle_new_message(event):
-    print(f'{get_future_time_in_seconds()} :: Received Msg')
+    logging.debug(f'{get_future_time_in_seconds()} :: Received Msg')
     if event.message:
         if event.chat.title == qx_signal_channel_name or event.chat.title == my_channel_name:
             match = re.compile(r'put “(UP|DOWN)”').search(event.message.message)
             if match:
-                await place_order(time=5, direction=match.group(1), amount=1)
-                print(f'{get_future_time_in_seconds()} : The value is {match.group(1)}.')
-                print(f'{get_future_time_in_seconds()} :: Group title ==> {event.chat.title}')
+                await place_order(order_time=5, direction=match.group(1), amount=1)
+                logging.debug(f'{get_future_time_in_seconds()} : The value is {match.group(1)}.')
+                logging.debug(f'{get_future_time_in_seconds()} :: Group title ==> {event.chat.title}')
 
             else:
                 text = event.message.message
                 info = re.search(r'\b(WIN|DEAL)\b', text)
                 if info is not None:
                     value = info.group(0)
-                    print(f'{get_future_time_in_seconds()} : The trade status is {value}.')
-                    await sendMessageToGroup(f"Order status {value}", qx_bot_update)
+                    logging.debug(f'{get_future_time_in_seconds()} : The trade status is {value}.')
+                    await send_message_to_group(f"Order status {value}", qx_bot_update)
 
                 else:
-                    print(f'{get_future_time_in_seconds()} :: Unsupported Message ==> {event.message.message}')
+                    logging.error(f'{get_future_time_in_seconds()} :: Unsupported Message ==> {event.message.message}')
         else:
 
-            print("Different MESSAGE from different group" + f'${event.chat.title}' + f'${event.message}')
+            logging.error("Different MESSAGE from different group" + f'${event.chat.title}' + f'${event.message}')
 
     if event.message.message is not None:
-        await sendMessageToGroup(event.message.message, None)
+        await send_message_to_group(event.message.message, None)
 
 
-async def sendMessageToGroup(messages, groupId):
+async def send_message_to_group(messages, group_id):
     try:
         # Find your group by its username or ID
-        group_entity = await client.get_entity(test_channel if groupId is None else groupId)
+        group_entity = await client.get_entity(test_channel if group_id is None else group_id)
         # Send your message
         await client.send_message(PeerChannel(group_entity.id.real), messages)
     except:
-        print('Error in sending Message')
+        logging.error('Error in sending Message')
 
 
-async def startClient():
-    # await connectQXApi()
+async def start_client():
     start_driver()
     if login_flow_script():
         await client.start()
         await client.run_until_disconnected()
     else:
-        print("Login Failed")
+        logging.error("Login Failed")
         sys.exit()
-
-
-async def connectQXApi():
-    ssid = """42["authorization",{"session":"eyJpdiI6IjczRDdzUWtreG1NM01ZNUVkZHlmNkE9PSIsInZhbHVlIjoiWXpoN2ZoWjVFcVkzZ2YrS0RhNU84SG9rd0s0ZVJJazdXSUFMRURTN0tGajQxTFE2ZFlqci9","isDemo":1}]"""
-    account = Quotex(set_ssid=ssid)
-    check_connect, message = account.connect()
-    print(check_connect, message)
 
 
 if __name__ == '__main__':
     with client:
-        client.loop.run_until_complete(startClient())
+        client.loop.run_until_complete(start_client())

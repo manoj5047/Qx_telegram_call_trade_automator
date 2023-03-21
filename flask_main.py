@@ -16,7 +16,7 @@ def home():
 @app.route('/start-client')
 def start_client():
     print(get_future_time_in_seconds())
-    asyncio.run(startClient())
+    asyncio.run(start_client())
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8888)

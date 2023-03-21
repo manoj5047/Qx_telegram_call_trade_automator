@@ -1,8 +1,9 @@
 import datetime
-import json
+import logging
 import threading
 import time
 
+import pyotp
 import undetected_chromedriver as uc
 from selenium.common import TimeoutException
 from selenium.webdriver.common.action_chains import ActionChains
@@ -12,6 +13,12 @@ from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
+token = "ULTME6U2JF3B7YVV"
+account_smj = "smj310711995@gmail.com"
+account_sayimanojsugavasi = "sayimanojsugavasi@gmail.com"
+email = account_sayimanojsugavasi
+password = "Pas$w06D@Qx"
+signin_screen = "https://quotex.io/en/sign-in/"
 # Find the Up and Down buttons inside the section-deal div
 up_button = None
 down_button = None
@@ -43,8 +50,8 @@ action_chains = ActionChains(driver)
 
 def printCurrentUrl():
     while True:
-        print(driver.current_url)
-        time.sleep(5)
+        logging.debug(driver.current_url)
+        time.sleep(60)
 
 
 def start_thread():
@@ -62,39 +69,32 @@ start_thread()
 def start_driver():
     driver.delete_all_cookies()
     WebDriverWait(driver, 20)
-    driver.get("https://quotex.io/en/sign-in/")
-
-
-def open_gmail():
-    driver.delete_all_cookies()
-    WebDriverWait(driver, 20)
-    driver.get("https://quotex.io/en/sign-in/")
+    driver.get(signin_screen)
 
 
 def login_flow_script():
     if do_login():
-        print("Logged in successfully. Current URL: " + driver.current_url)
+        logging.debug("Logged in successfully. Current URL: " + driver.current_url)
 
         switch_to_demo_trade()
-        print("Switched to demo trade")
+        logging.debug("Switched to demo trade")
 
         find_dash_board_buttons()
-        print("Found Buttons")
+        logging.debug("Found Buttons")
 
         setup_input_buttons()
-        print("Found Input Buttons")
+        logging.debug("Found Input Buttons")
         return True
         # place_long_order(is_to_place_order=False, miutes=0, amount=1)
         # place_short_order(is_to_place_order=False, miutes=0, amount=1)
     else:
-        print("Login Failed")
+        logging.error("Login Failed")
         return False
 
 
 def do_login():
     # Enter email and password
-    email = "sayimanojsugavasi@gmail.com"
-    password = "Pas$w06D@Qx"
+
     driver.find_element(By.NAME, "email").send_keys(email)
     driver.find_element(By.NAME, "password").send_keys(password)
 
@@ -103,7 +103,15 @@ def do_login():
 
     try:
         auth_screen = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "auth")))
-        print("AUTH SCREEN PRESENT")
+        logging.info("AUTH SCREEN PRESENT")
+        otp_input = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.CLASS_NAME, "input-control-cabinet__input")))
+        perform_click_action_chain(otp_input)
+        otp_input.clear()
+        otp_input.send_keys(pyotp.TOTP(token).now())
+        auth_sign_in_button = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.CLASS_NAME, "auth__submit")))
+        perform_click_action_chain(auth_sign_in_button)
         pass
     except:
         pass
@@ -128,7 +136,7 @@ def get_future_time(minutes):
     # get the current time
     now = datetime.datetime.now()
 
-    # print(f'current time {now.strftime("%H:%M:%S")}')
+    # logging.debug(f'current time {now.strftime("%H:%M:%S")}')
 
     # format the future time in HH:MM format
     future_time_str = (now + datetime.timedelta(minutes=minutes)).strftime('%H:%M')
@@ -144,28 +152,28 @@ def find_dash_board_buttons():
             EC.element_to_be_clickable((By.CSS_SELECTOR, ".section-deal__danger")))
 
     except TimeoutException:
-        print("Timed out waiting for DOWN to be visible")
+        logging.error("Timed out waiting for DOWN to be visible")
     try:
         up_button = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.CSS_SELECTOR, ".section-deal__success")))
     except TimeoutException:
-        print("Timed out waiting for UP to be visible")
+        logging.error("Timed out waiting for UP to be visible")
     try:
         amount_text_field = WebDriverWait(driver, 10).until(
             EC.visibility_of_element_located((By.CSS_SELECTOR, 'div.section-deal__investment '
                                                                'input.input-control__input[type="text"]')))
         value = amount_text_field.get_attribute("value")
-        print(f"AMOUNT TEXT FIELD VALUE : {value}")
+        logging.debug(f"AMOUNT TEXT FIELD VALUE : {value}")
     except TimeoutException:
         # handle timeout exception here
-        print("Timed out waiting for amount_text_field to be visible")
+        logging.error("Timed out waiting for amount_text_field to be visible")
     try:
         time_set_button = WebDriverWait(driver, 10).until(
             EC.visibility_of_element_located(
                 (By.XPATH, "//span[contains(@class, 'input-control__label') and text()='Time']")))
     except TimeoutException:
         # handle timeout exception here
-        print("Timed out waiting for time_set_button to be visible")
+        logging.error("Timed out waiting for time_set_button to be visible")
     try:
         remove_input_element = driver.find_element(By.XPATH,
                                                    "//button[contains(@class, 'input-control__button') and text()='-']")
@@ -173,7 +181,7 @@ def find_dash_board_buttons():
         add_input_element = driver.find_element(By.XPATH,
                                                 "//button[contains(@class, 'input-control__button') and text()='+']")
     except Exception:
-        print("ERROR on + and - Buttons findings")
+        logging.error("ERROR on + and - Buttons findings")
 
 
 def get_future_time_in_seconds():
@@ -188,24 +196,25 @@ def place_long_order(is_to_place_order, miutes, amount):
             # setup_amount(amount)
             setup_time(minutes=miutes)
             perform_click_action_chain(up_button)
-            print(f'{get_future_time_in_seconds()} :: Order placed time')
+            logging.debug(f'{get_future_time_in_seconds()} :: Order placed time')
         else:
-            print("UP AVAILABLE")
+            logging.debug("UP AVAILABLE")
     else:
-        print("Up element not found yet")
+        logging.error("Up element not found yet")
 
 
 # Click on the Down button
 def place_short_order(is_to_place_order, miutes, amount):
     if down_button is not None:
         if is_to_place_order is not False:
+            # Amount hardcoded to 1$
             setup_amount(amount)
             setup_time(minutes=miutes)
             perform_click_action_chain(down_button)
         else:
-            print("DOWN AVAILABLE")
+            logging.debug("DOWN AVAILABLE")
     else:
-        print("Down element not found yet")
+        logging.error("Down element not found yet")
 
 
 def setup_currency():
@@ -215,12 +224,12 @@ def setup_currency():
 
 def setup_input_buttons():
     if amount_text_field is not None:
-        print("AMOUNT AVAILABLE")
+        logging.debug("AMOUNT BTN AVAILABLE")
         setup_time(default_time)
         setup_amount(default_amount)
         # setup_currency()
     else:
-        print("AMOUNT NOT AVAILABLE")
+        logging.error("AMOUNT BTN NOT AVAILABLE")
 
 
 def setup_time(minutes):
@@ -228,57 +237,38 @@ def setup_time(minutes):
     perform_click_action_chain(time_set_button)
     perform_click_action_chain(
         driver.find_element(By.XPATH, f"//div[contains(@class, 'input-control__dropdown-option') and text()='{time}']"))
-    # print(time)
+    # logging.debug(time)
 
 
 def perform_click_action_chain(widget):
     action_chains.move_to_element(widget).click().perform()
 
 
+def perform_clear_action_chain(widget):
+    action_chains.move_to_element(widget).clear().perform()
+
+
 def setup_amount(amount):
     perform_click_action_chain(amount_text_field)
     amount_text_field.clear()
-
+    # DO NOT DELETE
     # value = amount_text_field.get_attribute("value")
-    # print(f'before value {value}')
+    # logging.debug(f'before value {value}')
     #
     # if amount <= 1:
     #     amount_text_field.clear()
     # elif amount > 1:
     #     amount_text_field.send_keys(amount)
     # value = amount_text_field.get_attribute("value")
-    # print(f'after value {value}')
+    # logging.debug(f'after value {value}')
 
     # final_value = int(value.replace('$', ''))
     # for i in range(final_value, 0, -1):
     #     remove_input_element.click()
-    #     print(amount_text_field.get_attribute("value").replace("$", ""))
+    #     logging.debug(amount_text_field.get_attribute("value").replace("$", ""))
 
 
-def keep_in_loop_till_find_ssid():
-    ssid = None
-    while True:
-        if ssid != None:
-            break
-
-        for entry in driver.get_log('driver'):
-            # Your code here
-            start_send = False
-            try:
-                shell = entry["message"]
-                print(shell)
-
-                payloadData = json.loads(shell)["message"]["params"]["response"]["payloadData"]
-                if "authorization" in shell and "session" in shell:
-                    ssid = payloadData
-                    print("Authorization Session ID: " + ssid)
-            except:
-                pass
-
-
-# keep_in_loop_till_find_ssid()
-
-
-def closeBrowser():
+def close_browser():
     # Close the browser
+    logging.debug("BROWSER CLOSED")
     driver.quit()
