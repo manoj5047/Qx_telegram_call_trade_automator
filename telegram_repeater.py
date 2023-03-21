@@ -24,29 +24,29 @@ client = TelegramClient(session_name, telegram_api_id, telegram_api_hash)
 
 #     # Replace this with your own code to handle the incoming messages
 
-def get_future_time():
-    # get the current time
+def get_future_time_in_seconds():
     now = datetime.datetime.now()
+    return now.strftime('%H:%M:%S.{}').format(now.microsecond // 1000)
 
-    # add 5 minutes to the current time
-    future_time = now
 
-    # format the future time in HH:MM format
-    future_time_str = future_time.strftime('%H:%M')
-
-    # return the future time in HH:MM format
-    return future_time_str
+async def get_future_time_in_seconds_await():
+    now = datetime.datetime.now()
+    return now.strftime('%H:%M:%S.{}').format(now.microsecond // 1000)
 
 
 async def place_order(time, direction, amount):
-    print("Placing order from Telegram")
     if direction == 'UP':
         place_long_order(True, time, amount)
 
     elif direction == 'DOWN':
         place_short_order(True, time, amount)
 
-    await sendMessageToGroup(f"Placed Order on {direction} with {amount}$ for {time} Minutes", qx_bot_update)
+    try:
+        time_in_seconds = get_future_time_in_seconds()
+        await sendMessageToGroup(f"Placed Order on {direction} with {amount}$ for {time} at {time_in_seconds} ",
+                                 qx_bot_update)
+    except:
+        print('Error in telegram sending.')
 
 
 def stop_trading():
@@ -55,27 +55,25 @@ def stop_trading():
 
 @client.on(events.NewMessage())
 async def handle_new_message(event):
+    print(f'{get_future_time_in_seconds()} :: Received Msg')
     if event.message:
-
         if event.chat.title == qx_signal_channel_name or event.chat.title == my_channel_name:
-            print(f'{get_future_time()} :: Group title ==> {event.chat.title}')
-            # print('Message ==> ' + f'{event.message.message}')
-            text = event.message.message
-            pattern = re.compile(r'put “(UP|DOWN)”')
-            match = pattern.search(text)
+            match = re.compile(r'put “(UP|DOWN)”').search(event.message.message)
             if match:
-                value = match.group(1)
-                print(f'{get_future_time()} : The value is {value}.')
-                await place_order(time=5, direction=value, amount=1)
+                await place_order(time=5, direction=match.group(1), amount=1)
+                print(f'{get_future_time_in_seconds()} : The value is {match.group(1)}.')
+                print(f'{get_future_time_in_seconds()} :: Group title ==> {event.chat.title}')
+
             else:
+                text = event.message.message
                 info = re.search(r'\b(WIN|DEAL)\b', text)
                 if info is not None:
                     value = info.group(0)
-                    print(f'{get_future_time()} : The trade status is {value}.')
+                    print(f'{get_future_time_in_seconds()} : The trade status is {value}.')
                     await sendMessageToGroup(f"Order status {value}", qx_bot_update)
 
                 else:
-                    print(f'{get_future_time()} :: Unsupported Message ==> {event.message.message}')
+                    print(f'{get_future_time_in_seconds()} :: Unsupported Message ==> {event.message.message}')
         else:
 
             print("Different MESSAGE from different group" + f'${event.chat.title}' + f'${event.message}')
@@ -85,13 +83,13 @@ async def handle_new_message(event):
 
 
 async def sendMessageToGroup(messages, groupId):
-    # Find your group by its username or ID
-    group_entity = await client.get_entity(test_channel if groupId is None else groupId)
-    # Send your message
     try:
+        # Find your group by its username or ID
+        group_entity = await client.get_entity(test_channel if groupId is None else groupId)
+        # Send your message
         await client.send_message(PeerChannel(group_entity.id.real), messages)
     except:
-        print('Empty Message.')
+        print('Error in sending Message')
 
 
 async def startClient():

@@ -21,6 +21,7 @@ default_amount = 1  # Dollars
 default_time = 5  # Minutes
 # First Script: Extract Authorization Session ID
 options = uc.ChromeOptions()
+options.headless = True
 options.add_experimental_option('w3c', True)
 options.add_argument('--disable-extensions')
 options.add_argument('--disable-infobars')
@@ -35,6 +36,7 @@ capabilities = DesiredCapabilities.CHROME.copy()
 capabilities['goog:loggingPrefs'] = {'performance': 'ALL'}
 capabilities['perfLoggingPrefs'] = {'enableNetwork': True, 'enablePage': False}
 driver = uc.Chrome(options=options, capabilities=capabilities)
+action_chains = ActionChains(driver)
 
 
 def start_driver():
@@ -62,8 +64,8 @@ def login_flow_script():
     setup_input_buttons()
     print("Found Input Buttons")
 
-    place_long_order(is_to_place_order=False, miutes=0, amount=1)
-    place_short_order(is_to_place_order=False, miutes=0, amount=1)
+    # place_long_order(is_to_place_order=False, miutes=0, amount=1)
+    # place_short_order(is_to_place_order=False, miutes=0, amount=1)
 
 
 def do_login():
@@ -74,7 +76,7 @@ def do_login():
     driver.find_element(By.NAME, "password").send_keys(password)
 
     # Click Sign In button
-    driver.find_element(By.CLASS_NAME, "modal-sign__block-button").click()
+    perform_click_action_chain(driver.find_element(By.CLASS_NAME, "modal-sign__block-button"))
 
     # Wait for the dashboard to load
     WebDriverWait(driver, 60).until(expected_conditions.url_contains('trade'))
@@ -82,20 +84,20 @@ def do_login():
 
 def switch_to_demo_trade():
     # Change trade to demo trade
-    driver.find_element(By.CLASS_NAME, "usermenu").click()
-    driver.find_element(By.XPATH, "//a[@href='https://qxbroker.com/en/demo-trade']").click()
+    usermenu = driver.find_element(By.CLASS_NAME, "usermenu")
+    demo_button = driver.find_element(By.XPATH, "//a[@href='https://qxbroker.com/en/demo-trade']")
+    perform_click_action_chain(usermenu)
+    perform_click_action_chain(demo_button)
 
 
 def get_future_time(minutes):
     # get the current time
     now = datetime.datetime.now()
-    print(f'current time {now.strftime("%H:%M")}')
 
-    # add 5 minutes to the current time
-    future_time = now + datetime.timedelta(minutes=minutes)
+    # print(f'current time {now.strftime("%H:%M:%S")}')
 
     # format the future time in HH:MM format
-    future_time_str = future_time.strftime('%H:%M')
+    future_time_str = (now + datetime.timedelta(minutes=minutes)).strftime('%H:%M')
 
     # return the future time in HH:MM format
     return future_time_str
@@ -140,15 +142,21 @@ def find_dash_board_buttons():
         print("ERROR on + and - Buttons findings")
 
 
+def get_future_time_in_seconds():
+    now = datetime.datetime.now()
+    return now.strftime('%H:%M:%S.{}').format(now.microsecond // 1000)
+
+
 # Click on the Up button
 def place_long_order(is_to_place_order, miutes, amount):
     if up_button is not None:
-        if is_to_place_order is False:
-            print("UP AVAILABLE")
-        else:
-            setup_amount(amount)
+        if is_to_place_order is not False:
+            # setup_amount(amount)
             setup_time(minutes=miutes)
-            up_button.click()
+            perform_click_action_chain(up_button)
+            print(f'{get_future_time_in_seconds()} :: Order placed time')
+        else:
+            print("UP AVAILABLE")
     else:
         print("Up element not found yet")
 
@@ -156,12 +164,12 @@ def place_long_order(is_to_place_order, miutes, amount):
 # Click on the Down button
 def place_short_order(is_to_place_order, miutes, amount):
     if down_button is not None:
-        if is_to_place_order is False:
-            print("DOWN AVAILABLE")
-        else:
+        if is_to_place_order is not False:
             setup_amount(amount)
             setup_time(minutes=miutes)
-            down_button.click()
+            perform_click_action_chain(down_button)
+        else:
+            print("DOWN AVAILABLE")
     else:
         print("Down element not found yet")
 
@@ -182,28 +190,31 @@ def setup_input_buttons():
 
 
 def setup_time(minutes):
-    print(get_future_time(1 if minutes <= 0 else minutes))
-    time_set_button.click()
-    xpath = f"//div[contains(@class, 'input-control__dropdown-option') and text()='{get_future_time(minutes)}']"
-    print(xpath)
-    future_time_button = driver.find_element(By.XPATH, xpath)
-    # Move the mouse cursor to the button and click it
-    action_chains = ActionChains(driver)
-    action_chains.move_to_element(future_time_button).click().perform()
-    # future_time_button.click()
+    time = get_future_time(5)
+    perform_click_action_chain(time_set_button)
+    perform_click_action_chain(
+        driver.find_element(By.XPATH, f"//div[contains(@class, 'input-control__dropdown-option') and text()='{time}']"))
+    # print(time)
+
+
+def perform_click_action_chain(widget):
+    action_chains.move_to_element(widget).click().perform()
 
 
 def setup_amount(amount):
-    amount_text_field.click()
-    value = amount_text_field.get_attribute("value")
-    print(f'before value {value}')
+    perform_click_action_chain(amount_text_field)
+    amount_text_field.clear()
 
-    if amount <= 1:
-        amount_text_field.clear();
-    elif amount > 1:
-        amount_text_field.send_keys(amount)
-    value = amount_text_field.get_attribute("value")
-    print(f'after value {value}')
+    # value = amount_text_field.get_attribute("value")
+    # print(f'before value {value}')
+    #
+    # if amount <= 1:
+    #     amount_text_field.clear()
+    # elif amount > 1:
+    #     amount_text_field.send_keys(amount)
+    # value = amount_text_field.get_attribute("value")
+    # print(f'after value {value}')
+
     # final_value = int(value.replace('$', ''))
     # for i in range(final_value, 0, -1):
     #     remove_input_element.click()
