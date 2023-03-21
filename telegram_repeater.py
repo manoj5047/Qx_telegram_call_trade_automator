@@ -60,7 +60,7 @@ async def handle_new_message(event):
         if event.chat.title == qx_signal_channel_name or event.chat.title == my_channel_name:
             match = re.compile(r'put “(UP|DOWN)”').search(event.message.message)
             if match:
-                # await place_order(time=5, direction=match.group(1), amount=1)
+                await place_order(time=5, direction=match.group(1), amount=1)
                 print(f'{get_future_time_in_seconds()} : The value is {match.group(1)}.')
                 print(f'{get_future_time_in_seconds()} :: Group title ==> {event.chat.title}')
 
@@ -94,8 +94,8 @@ async def sendMessageToGroup(messages, groupId):
 
 async def startClient():
     # await connectQXApi()
-    # start_driver()
-    # login_flow_script()
+    start_driver()
+    login_flow_script()
     await client.start()
     await client.run_until_disconnected()
 
