@@ -21,7 +21,7 @@ remote_session_name = "QX_REMOTE_SESSION"
 qx_signal_channel_name = 'Trading BTC Signals'
 my_channel_name = 'Test'
 
-client = TelegramClient(remote_session_name, telegram_api_id, telegram_api_hash)
+client = TelegramClient(None, telegram_api_id, telegram_api_hash)
 
 
 # @client.on(events.NewMessage(chats='wolfxsignals'))
