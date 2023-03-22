@@ -1,2 +1,0 @@
-[console_scripts]
-quotexapi = quotexapi.__main__:main
