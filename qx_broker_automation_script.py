@@ -127,8 +127,10 @@ def do_login():
 
 def switch_to_demo_trade():
     # Change trade to demo trade
-    usermenu = driver.find_element(By.CLASS_NAME, "usermenu")
-    demo_button = driver.find_element(By.XPATH, "//a[@href='https://qxbroker.com/en/demo-trade']")
+    usermenu = WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.CLASS_NAME, "usermenu")))
+    demo_button = WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.XPATH, "//a[@href='https://qxbroker.com/en/demo-trade']")))
     perform_click_action_chain(usermenu)
     perform_click_action_chain(demo_button)
 
@@ -176,11 +178,11 @@ def find_dash_board_buttons():
         # handle timeout exception here
         logger.error("Timed out waiting for time_set_button to be visible")
     try:
-        remove_input_element = driver.find_element(By.XPATH,
-                                                   "//button[contains(@class, 'input-control__button') and text()='-']")
+        remove_input_element = WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.XPATH,
+                                                                                                 "//button[contains(@class, 'input-control__button') and text()='-']")))
 
-        add_input_element = driver.find_element(By.XPATH,
-                                                "//button[contains(@class, 'input-control__button') and text()='+']")
+        add_input_element = WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.XPATH,
+                                                                                              "//button[contains(@class, 'input-control__button') and text()='+']")))
     except Exception:
         logger.error("ERROR on + and - Buttons findings")
 
