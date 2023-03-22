@@ -77,17 +77,20 @@ def login_flow_script():
     if do_login():
         logger.debug("Logged in successfully. Current URL: " + driver.current_url)
 
-        switch_to_demo_trade()
-        logger.debug("Switched to demo trade")
+        if switch_to_demo_trade(driver.current_url):
+            logger.debug("Switched to demo trade")
 
-        find_dash_board_buttons()
-        logger.debug("Found Buttons")
+            find_dash_board_buttons()
+            logger.debug("Found Buttons")
 
-        setup_input_buttons()
-        logger.debug("Found Input Buttons")
-        return True
-        # place_long_order(is_to_place_order=False, miutes=0, amount=1)
-        # place_short_order(is_to_place_order=False, miutes=0, amount=1)
+            setup_input_buttons()
+            logger.debug("Found Input Buttons")
+            return True
+
+        else:
+            return False
+
+
     else:
         logger.error("Login Failed")
         return False
@@ -125,14 +128,22 @@ def do_login():
         return False
 
 
-def switch_to_demo_trade():
+def switch_to_demo_trade(currentUrl):
     # Change trade to demo trade
     usermenu = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.CLASS_NAME, "usermenu")))
-    demo_button = WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((By.XPATH, "//a[@href='https://qxbroker.com/en/demo-trade']")))
-    perform_click_action_chain(usermenu)
-    perform_click_action_chain(demo_button)
+    if currentUrl.__contains__("qxbroker.com"):
+        url = "qxbroker.com"
+    else:
+        url = "quotex.com"
+    try:
+        demo_button = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, f"//a[@href='https://{url}/en/demo-trade']")))
+        perform_click_action_chain(usermenu)
+        perform_click_action_chain(demo_button)
+        return True
+    except TimeoutException:
+        return False
 
 
 def get_future_time(minutes):
